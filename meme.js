@@ -447,10 +447,10 @@ class MemesWar {
 
         while (true) {
             for (let i = 0; i < data.length; i++) {
-                const telegramInitData = data[i];
-                const userData = JSON.parse(decodeURIComponent(telegramInitData.split('user=')[1].split('&')[0]));
+                const initData = data[i];
+                const userData = JSON.parse(decodeURIComponent(initData.split('user=')[1].split('&')[0]));
                 const firstName = userData.first_name;
-
+                const telegramInitData = encodeURIComponent(encodeURI(decodeURIComponent(initData)));
                 console.log(`========== Account ${i + 1} | ${firstName.green} ==========`);
 
                 const userInfoResult = await this.getUserInfo(telegramInitData);

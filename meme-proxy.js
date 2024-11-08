@@ -528,11 +528,12 @@ class MemesWar {
 
         while (true) {
             for (let i = 0; i < data.length; i++) {
-                const telegramInitData = data[i];
+                const initData = data[i];
                 const proxyUrl = this.proxyList[i];
-                const userData = JSON.parse(decodeURIComponent(telegramInitData.split('user=')[1].split('&')[0]));
+                const userData = JSON.parse(decodeURIComponent(initData.split('user=')[1].split('&')[0]));
                 const firstName = userData.first_name;
-
+                const telegramInitData = encodeURIComponent(encodeURI(decodeURIComponent(initData)));
+                
                 let proxyIP = "Unknown";
                 try {
                     proxyIP = await this.checkProxyIP(proxyUrl);
