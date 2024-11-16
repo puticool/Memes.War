@@ -4,43 +4,15 @@ const axios = require('axios');
 const colors = require('colors');
 const readline = require('readline');
 const printLogo = require('./src/logo');
+const header = require('./src/header')
+const log = require('./src/logger')
 
 class MemesWar {
     constructor() {
-        this.headers = {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "accept-language": "en-US,en;q=0.9",
-            "referer": "https://memes-war.memecore.com/",
-            "sec-ch-ua": '"Chromium";v="130", "Not?A_Brand";v="99"',
-            "sec-ch-ua-mobile": "?1",
-            "sec-ch-ua-platform": '"Android"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "user-agent": "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
-        };        
+        this.headers = header;
+        this.log = log;        
     }
 
-    log(msg, type = 'info') {
-        const timestamp = new Date().toLocaleTimeString();
-        switch(type) {
-            case 'success':
-                console.log(`[${timestamp}] [*] ${msg}`.green);
-                break;
-            case 'custom':
-                console.log(`[${timestamp}] [*] ${msg}`.magenta);
-                break;        
-            case 'error':
-                console.log(`[${timestamp}] [✗] ${msg}`.red);
-                break;
-            case 'warning':
-                console.log(`[${timestamp}] [*] ${msg}`.yellow);
-                break;
-            default:
-                console.log(`[${timestamp}] [*] ${msg}`.blue);
-        }
-    }
 
     async countdown(seconds) {
         for (let i = seconds; i > 0; i--) {
@@ -291,7 +263,7 @@ class MemesWar {
         };
 
         try {
-            const response = await axios.post(url, { guildId, warbondCount }, { headers });
+            const response = await axios.post(url, { guildId, warbondCount: parseInt(warbondCount) }, { headers });
             if (response.status === 200) {
                 return { success: true };
             } else {
