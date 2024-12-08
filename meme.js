@@ -10,7 +10,7 @@ const log = require('./src/logger')
 class MemesWar {
     constructor() {
         this.headers = header;
-        this.log = log;        
+        this.log = log;
     }
 
 
@@ -27,17 +27,17 @@ class MemesWar {
 
     async getUserInfo(telegramInitData) {
         const url = "https://memes-war.memecore.com/api/user";
-        const headers = { 
+        const headers = {
             ...this.headers,
             "cookie": `telegramInitData=${telegramInitData}`
         };
-    
+
         try {
             const response = await axios.get(url, { headers });
             if (response.status === 200 && response.data.data) {
                 const userData = response.data.data.user;
                 const { honorPoints, warbondTokens, honorPointRank, inputReferralCode } = userData;
-    
+
                 if (!inputReferralCode) {
                     try {
                         await axios.put(
@@ -50,10 +50,10 @@ class MemesWar {
                         this.log(`Unable to enter referral code: ${referralError.message}`, 'error');
                     }
                 }
-    
-                return { 
-                    success: true, 
-                    data: { honorPoints, warbondTokens, honorPointRank } 
+
+                return {
+                    success: true,
+                    data: { honorPoints, warbondTokens, honorPointRank }
                 };
             } else {
                 return { success: false, error: 'Invalid response format' };
@@ -75,7 +75,7 @@ class MemesWar {
             if (response.status === 200 && response.data.data) {
                 return { success: true, data: response.data.data };
             } else {
-                return { success: false, error: 'Invalid response format' };
+                return { success: false, error: "Invalid response format" };
             }
         } catch (error) {
             return { success: false, error: error.message };
@@ -109,11 +109,11 @@ class MemesWar {
         }
 
         const { leftSecondsUntilTreasury, rewards } = checkResult.data;
-        
+
         if (leftSecondsUntilTreasury === 0) {
             this.log('Claiming $War.Bond...', 'info');
             const claimResult = await this.claimTreasuryRewards(telegramInitData);
-            
+
             if (claimResult.success) {
                 const rewardAmount = claimResult.data.rewards[0].rewardAmount;
                 this.log(`Successfully claimed ${rewardAmount} $War.Bond`, 'success');
@@ -138,7 +138,7 @@ class MemesWar {
             if (response.status === 200 && response.data.data) {
                 return { success: true, data: response.data.data };
             } else {
-                return { success: false, error: 'Invalid response format' };
+                return { success: false, error: "Invalid response format" };
             }
         } catch (error) {
             return { success: false, error: error.message };
@@ -177,7 +177,7 @@ class MemesWar {
         if (claimableReward) {
             this.log('Proceeding with check-in...', 'info');
             const checkInResult = await this.performCheckIn(telegramInitData);
-            
+
             if (checkInResult.success) {
                 const { currentConsecutiveCheckIn, rewards } = checkInResult.data;
                 const rewardText = rewards.map(reward => {
@@ -188,13 +188,13 @@ class MemesWar {
                     }
                     return `${reward.rewardAmount} ${reward.rewardType}`;
                 }).join(' + ');
-                
+
                 this.log(`Check-in successful for day ${currentConsecutiveCheckIn} | Rewards: ${rewardText}`, 'success');
             } else {
                 this.log(`Check-in failed: ${checkInResult.error}`, 'error');
             }
         } else {
-            this.log('Already checked in today', 'warning');
+            this.log("Already checked in today", 'warning');
         }
     }
 
@@ -317,94 +317,110 @@ class MemesWar {
         try {
             const [dailyResponse, singleResponse] = await Promise.all([
                 axios.get("https://memes-war.memecore.com/api/quest/daily/list", {
-                    headers: { ...this.headers, "cookie": `telegramInitData=${telegramInitData}` }
+                    headers: { ...this.headers, cookie: `telegramInitData=${telegramInitData}` },
                 }),
-                axios.get("https://memes-war.memecore.com/api/quest/single/list", {
-                    headers: { ...this.headers, "cookie": `telegramInitData=${telegramInitData}` }
-                })
+                axios.get("https://memes-war.memecore.com/api/quest/general/list", {
+                    headers: { ...this.headers, cookie: `telegramInitData=${telegramInitData}` },
+                }),
             ]);
-    
+
             if (dailyResponse.status === 200 && singleResponse.status === 200) {
-                const dailyQuests = dailyResponse.data.data.quests.map(quest => ({ ...quest, questType: 'daily' }));
-                const singleQuests = singleResponse.data.data.quests.map(quest => ({ ...quest, questType: 'single' }));
-                
+                const dailyQuests = dailyResponse.data.data.quests.map((quest) => ({ ...quest, questType: "daily" }));
+                const singleQuests = singleResponse.data.data.quests.map((quest) => ({ ...quest, questType: "general" }));
+
                 return { success: true, data: [...dailyQuests, ...singleQuests] };
             } else {
-                return { success: false, error: 'Invalid response format' };
+                return { success: false, error: "Invalid response format" };
             }
         } catch (error) {
             return { success: false, error: error.message };
         }
     }
-    
-    async submitQuestProgress(telegramInitData, questType, questId) {
-        const url = `https://memes-war.memecore.com/api/quest/${questType}/${questId}/progress`;
+
+    async submitQuestProgress(telegramInitData, questType, task, status) {
+        const { id: questId } = task;
+        let url = `https://memes-war.memecore.com/api/quest/${questType}/${questId}/claim`;
+        if (status === "GO") {
+            url = `https://memes-war.memecore.com/api/quest/${questType}/${questId}/visit`;
+        } else if (status === "VERIFY") {
+            url = `https://memes-war.memecore.com/api/quest/${questType}/${questId}/verify`;
+        } else if (status === "DONE") {
+            return;
+        }
+
         const headers = {
             ...this.headers,
-            "cookie": `telegramInitData=${telegramInitData}`
+            cookie: `telegramInitData=${telegramInitData}`,
         };
-    
+
         try {
-            const response = await axios.post(url, {}, { headers });
+            const response = await axios.post(url, null, { headers });
             if (response.status === 200 && response.data.data) {
                 return { success: true, data: response.data.data };
             } else {
-                return { success: false, error: 'Invalid response format' };
+                return { success: false, error: "Invalid response format" };
             }
         } catch (error) {
             return { success: false, error: error.message };
         }
     }
-    
+
     async processQuests(telegramInitData) {
         const questsResult = await this.getQuests(telegramInitData);
         if (!questsResult.success) {
-            this.log(`Unable to retrieve quest list: ${questsResult.error}`, 'error');
+            this.log(`Unable to retrieve quest list: ${questsResult.error}`, "error");
             return;
         }
-    
-        const pendingQuests = questsResult.data.filter(quest => quest.status === 'GO');
+
+        const pendingQuests = questsResult.data.filter((quest) => quest.status !== "DONE" && quest.status !== "IN_PROGRESS");
         if (pendingQuests.length === 0) {
-            this.log('No quests to complete', 'warning');
+            this.log("No quests to complete", "warning");
             return;
         }
-    
+
         for (const quest of pendingQuests) {
-            this.log(`Completing quest ${quest.title}`, 'info');
+            let status = quest.status;
+            await this.countdown(1);
+            this.log(`Completing quest ${quest.title}`, "info");
 
-            let result = await this.submitQuestProgress(telegramInitData, quest.questType, quest.id);
-            if (!result.success || result.data.status !== 'VERIFY') {
-                this.log(`Unable to complete quest ${quest.title}: ${result.error || 'Invalid status'}`, 'error');
-                continue;
-            }
-    
-
-            await this.countdown(3);
-
-            result = await this.submitQuestProgress(telegramInitData, quest.questType, quest.id);
-            if (!result.success || result.data.status !== 'CLAIM') {
-                this.log(`Unable to complete quest ${quest.title}: ${result.error || 'Invalid status'}`, 'error');
-                continue;
-            }
-    
-
-            await this.countdown(3);
-    
-
-            result = await this.submitQuestProgress(telegramInitData, quest.questType, quest.id);
-            if (!result.success || result.data.status !== 'DONE') {
-                this.log(`Unable to complete quest ${quest.title}: ${result.error || 'Invalid status'}`, 'error');
-                continue;
-            }
-
-            const rewards = result.data.rewards.map(reward => {
-                if (reward.rewardType === 'WARBOND') {
-                    return `${reward.rewardAmount} $War.Bond`;
+            let result = await this.submitQuestProgress(telegramInitData, quest.questType, quest, status);
+            if (quest.status === "CLAIM") {
+            } else {
+                if (!result.success || result.data.status !== "VERIFY") {
+                    this.log(`Unable to verify quest ${quest.id} | ${quest.title}: ${result.error || "Invalid status"}`, "error");
+                    continue;
                 }
-                return `${reward.rewardAmount} ${reward.rewardType}`;
-            }).join(' + ');
-    
-            this.log(`Successfully completed quest ${quest.title} | Rewards: ${rewards}`, 'success');
+                await this.countdown(3);
+                status = "VERIFY";
+                result = await this.submitQuestProgress(telegramInitData, quest.questType, quest, status);
+                if (!result.success || result.data.status !== "CLAIM") {
+                    this.log(`Unable to verify quest ${quest.id} | ${quest.title}: ${result.error || "Invalid status"}`, "error");
+                    continue;
+                }
+
+                await this.countdown(3);
+                status = "CLAIM";
+                result = await this.submitQuestProgress(telegramInitData, quest.questType, quest, status);
+
+                if (!result.success || result.data.status !== "DONE") {
+                    this.log(`Unable to complete quest ${quest.id} |  ${quest.title}: ${result.error || "Invalid status"}`, "error");
+                    continue;
+                }
+            }
+
+
+            const rewards = result.data.rewards
+                .map((reward) => {
+                    if (reward.rewardType === "WARBOND") {
+                        return `${reward.rewardAmount} $War.Bond`;
+                    }
+                    return `${reward.rewardAmount} ${reward.rewardType}`;
+                })
+                .join(" + ");
+
+
+
+            this.log(`Successfully completed quest ${quest.title} | Rewards: ${rewards}`, "success");
         }
     }
 
@@ -414,7 +430,7 @@ class MemesWar {
             .replace(/\r/g, '')
             .split('\n')
             .filter(Boolean);
-        
+
         printLogo();
 
         while (true) {
